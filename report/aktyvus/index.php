@@ -19,16 +19,18 @@
  *
  * This file generates live view of recent logs.
  *
- * @package    report_trink11
+ * @package    report_aktyvus
  * @copyright  2011 Petr Skoda
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
  
- require_once('../../config.php');
+    require_once('../../config.php');
     require_once($CFG->libdir.'/adminlib.php');
-    #admin_externalpage_setup('reportrink11');
-    require_once('select_students_form.php');
+    #admin_externalpage_setup('reporaktyvus');
+    //require_once('select_neglect_level_form.php');
+    
+    require_once(dirname(__FILE__).'/select_neglect_level_form.php');
 	
 	$id      = optional_param('id', $SITE->id, PARAM_INT);
 	$course = $DB->get_record('course', array('id'=>$id), '*', MUST_EXIST);
@@ -38,13 +40,15 @@
 	require_login($course);
 	
 	
-	admin_externalpage_setup('reporttrink11', '', null, '', array('pagelayout'=>'report'));
-
+	admin_externalpage_setup('reportaktyvus', '', null, '', array('pagelayout'=>'report'));
 	
-	
+ 	
     admin_externalpage_print_header();
-	echo $OUTPUT->heading(get_string('pluginname', 'report_trink11'));
-	
+    //echo $OUTPUT->header();
+	echo $OUTPUT->heading(get_string('pluginname', 'report_aktyvus'));
+	/*$list=array('1' => 'Value 1', '2' => 'Value 2');
+    $OUTPUT->htmllist($list);
+    */
 	#$select = html_select::make(array('1' => 'Value 1', '2' => 'Value 2'), 'choice1', '2');
 	#echo $OUTPUT->select($select);
 
@@ -58,12 +62,24 @@
     $contents .= $OUTPUT->checkbox($checkbox, 'agree');
     echo $OUTPUT->form($form, $contents);
 */
+	//ECHO '11111111';
 	
-	$nl_form = new select_neglect_level_form(new moodle_url(null, array('id'=>$id)), array('students'=>$students));
-
+	//print_r(error_get_last());
+	
+	$nl_form = new select_neglect_level_form();
+    
     $nl_form->display();
+    /*ECHO '33333';
+    print_r(error_get_last());
+	*/
 	
-	
+	if ($frmdata = $nl_form->get_data()) {
+	 //   echo $frmdata->neglecttime;
+    }
+    else {
+        echo 'Wrong date!';
+    }
+    
 	$table = new html_table();
 	$table->head = array('Padalinys',
 	                     'Kurso pavadinimas',
@@ -91,19 +107,11 @@
     #</tr>";
 	
 	//$rs = $DB->get_recordset('course',(array) $conditions=null, $sort='', $fields='*', $limitfrom=0, $limitnum=0);
-	/*
-	$sql='SELECT cat.name as name, c.id as id, c.fullname as fullname, c.shortname as shortname FROM {course} as c '+//, {course_categories} AS cat'+
-         ' INNER JOIN {course_categories} AS cat ON c.category = cat.id';// WHERE foo = ?', array('bar'));
-    */
+	
     $destemail='nera@duomenu.lt';
     $sqlemail='SELECT cat.name as name, c.id as id, c.fullname as fullname, c.shortname as shortname FROM {course} as c JOIN {course_categories} AS cat ON c.category = cat.id';
     
-    /*$rsemail = $DB->get_recordset_sql(....) {
-    foreach ($rs as $record) {
-        // Do whatever you want with this record
-    }
-    $rsemail->close();
-    */
+   
     
     $sql='SELECT cat.name as name, c.id as id, c.fullname as fullname FROM {course} as c JOIN {course_categories} AS cat ON c.category = cat.id';
     
@@ -157,16 +165,19 @@
             $regrec=$DB->get_record_sql($sqlcount, array($record->id));
             $regstud=$regrec->students;
          
-         array_push($eilutes, array(
-         $record->name,
-         //$record->id,//
-    	 $record->fullname, 
-    	 $destemail,
-    	 $regstud,
-    	 //$record->timeaccess,//
-    	 gmdate("Y-m-d H:i:s", $lastDest), //'last Dest',
-    	 gmdate("Y-m-d H:i:s",$lastStud)//'last Stud'
-         ));
+         if (($lastDest>$frmdata->neglecttime) and ($lastStud>$frmdata->neglecttime))  
+         {
+             array_push($eilutes, array(
+             $record->name,
+             //$record->id,//
+        	 $record->fullname, 
+        	 $destemail,
+        	 $regstud,
+        	 //$record->timeaccess,//
+        	 gmdate("Y-m-d H:i:s", $lastDest), //'last Dest',
+        	 gmdate("Y-m-d H:i:s",$lastStud)//'last Stud'
+             ));
+         }
     	 //$record->shortname ));
 	 
      }
@@ -177,6 +188,6 @@
 	$rs->close();
 	$table->data = $eilutes; 
 	echo html_writer::table($table);
-	 	
+	
     admin_externalpage_print_footer();
  ?>
